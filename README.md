@@ -1,2 +1,2 @@
 # file-system
-A primitive Unix-like filesystem
+A primitive Unix-like filesystem in C
