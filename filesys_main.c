@@ -1,0 +1,86 @@
+#include "filesys.h"
+
+int main() {
+
+FS* fs = createFS();
+
+char str[PATH_LENGTH_MAX + COMMAND_LENGTH_MAX];
+char strCommand[COMMAND_LENGTH_MAX];
+char strPath[PATH_LENGTH_MAX];
+char strTempCommand[COMMAND_LENGTH_MAX];
+char strTempPath[PATH_LENGTH_MAX];
+memset(str, '\0', sizeof(str));
+memset(strCommand, '\0', sizeof(strCommand));
+memset(strPath, '\0', sizeof(strPath));
+memset(strTempCommand, '\0', sizeof(strTempCommand));
+memset(strTempPath, '\0', sizeof(strTempPath));
+
+char quitStr[5] = "quit";
+char lsStr[3] = "ls";
+char pwdStr[4] = "pwd";
+char cdStr[3] = "cd";
+char mkdirStr[6] = "mkdir";
+char touchStr[6] = "touch";
+char rmStr[3] = "rm";
+
+
+	while (fgets(str, PATH_LENGTH_MAX + COMMAND_LENGTH_MAX + 1, stdin)) { 
+		// loop until quit command
+
+		// Remove newline
+		char* newlinePtr = strchr(str, '\n');
+		*newlinePtr = '\0';
+
+		// Look for space char
+		char* ptr = strchr(str, 32);
+
+		// check for absence of space char (indicates pathless command)
+		if (ptr == NULL) {
+		    	// Pathless commands
+	    
+	   		if (strcmp(str, quitStr) == 0)
+				return 0;
+	
+	   		else if (strcmp(str, pwdStr) == 0)
+				pwd(fs);
+
+	    		else if (strcmp(str, lsStr) == 0)
+				ls(fs, NULL);
+			else
+				printf("Command not found\n");
+		}	
+
+
+		//Commands followed by paths
+		else {
+			//separate command and path
+			char* a = &str[0];
+			memcpy(strCommand, a, ptr - a);
+			memcpy(strPath, ptr+1, (a + sizeof(str)) - ptr);
+	
+	        	if (strcmp(strCommand, lsStr) == 0) {
+	    	    		ls(fs, strPath);
+		        }
+	        	//else if (strcmp(strCommand, cdStr) == 0) {
+			//	cd(strPath);
+	        	//}
+		    	//else if (strcmp(strCommand, touchStr) == 0) {
+			//    	touch(strPath);
+	    		//} 
+		    	else if (strcmp(strCommand, mkdirStr) == 0) {
+			    	fs->CWD = mkdir(fs, strPath);
+	    		}
+		    	//else if (strcmp(strCommand, rmStr) == 0) {
+			//	rm(strPath);
+	    		//}
+
+			else {
+				printf("%s %s\n", strCommand, strPath);
+				printf("Command not found\n");
+			}
+		}
+		memset(strCommand, '\0', sizeof(strCommand));
+		memset(strPath, '\0', sizeof(strPath));
+    	}
+return -1;
+}
