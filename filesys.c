@@ -220,7 +220,6 @@ char* getLocalFromPath(char* path) {
 	char* p = strchr(path, '/');
 	if (p == NULL)
 		return path;
-
 	return ++p;
 }
 
