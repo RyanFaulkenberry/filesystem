@@ -61,9 +61,9 @@ char rmStr[3] = "rm";
 	        	if (strcmp(strCommand, lsStr) == 0) {
 	    	    		ls(fs, strPath);
 		        }
-	        	//else if (strcmp(strCommand, cdStr) == 0) {
-			//	cd(strPath);
-	        	//}
+	        	else if (strcmp(strCommand, cdStr) == 0) {
+				fs->CWD = cd(fs, strPath);
+	        	}
 		    	else if (strcmp(strCommand, touchStr) == 0) {
 			    	fs->CWD = mkdir(fs, strPath, 0);
 	    		} 
@@ -71,7 +71,7 @@ char rmStr[3] = "rm";
 			    	fs->CWD = mkdir(fs, strPath, 1);
 	    		}
 		    	//else if (strcmp(strCommand, rmStr) == 0) {
-			//	rm(strPath);
+			//	rm(fs, strPath);
 	    		//}
 
 			else {

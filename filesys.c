@@ -51,7 +51,7 @@ void childListInsert(node* n, node* parent) {
 	node* temp = parent->firstChild;
 	node* last;
 
-	while (nameCompare(n, temp) == false) {
+	while (nodeCompare(n, temp) == false) {
 		last = temp;
 		temp = temp->sibling;
 		if (temp == NULL)
@@ -68,7 +68,7 @@ void childListInsert(node* n, node* parent) {
 	return;
 }
 
-bool nameCompare(node* insertee, node* existing) {
+bool nodeCompare(node* insertee, node* existing) {
 /* True iff insertee should be inserted before existing in the child list */
 
 	if (insertee->nodeType == 1) {
@@ -127,28 +127,22 @@ node* mkdir(FS* fs, char* path, int nodeType) {
  * Ensures that no files are on the path and that the path does not yet exist.
  * Caller expected to reset fs->CWD to the return value of mkdir
  */
+	node* first;
 	node* n;
-	node* temp;
 
-	if (!fileOnPath(fs, path)) {
-		printf("Error, a file exists on the path\n");
-		return NULL;
+	if (path[0] == '/') {
+		first = fs->root;
+		++path;	// remove leading '/'
 	}
-	if (path[0] == '/')
-		temp = fs->root;
 	else
-		temp = fs->CWD;
+		first = fs->CWD;
 
-	if (findNode(temp, path) != NULL) {
+	n = findNode(first, path);
+	if (n != NULL) {
 		printf("Unable to create directory: directory already exists\n");
 		return NULL;
 	}
-	if (path[0] == '/') {
-		char* pointer = &path[1];
-		return pathMaker(fs->root, pointer, nodeType);
-	}
-	else
-		return pathMaker(fs->CWD, path, nodeType);
+	return pathMaker(first, path, nodeType);
 }
 
 node* pathMaker(node* n, char* path, int makeType) {
@@ -167,15 +161,16 @@ node* pathMaker(node* n, char* path, int makeType) {
 	node* tempNode;
 
 	int nodeType = 1;
+
 	// build path node by node from n and fill in missing directories
 	for (i=0; i < length; i++) {
 
 		if (path[i] == '/' || i == length-1) {
+
 			if (i == length-1) { // final case
 				nodeType = makeType;
 				tempPath[i] = path[i];
 			}
-
 			tempNode = findNode(n, tempPath);
 			if (tempNode == NULL) { // if no node found on path
 				l = getLocalFromPath(tempPath);
@@ -185,6 +180,7 @@ node* pathMaker(node* n, char* path, int makeType) {
 				n = tempNode;
 		}
 		tempPath[i] = path[i];
+
 	}
 	if (makeType == 0)
 		return n->parent;
@@ -199,6 +195,7 @@ node* createNextNode(node* n, char* path, int nodeType) {
 	char formattedPath[PATH_LENGTH_MAX+1], *f, *l;
 	memset(formattedPath, '\0', sizeof(formattedPath));
 	strcpy(formattedPath, n->name);
+
 	if (n->parent != NULL)
 		f = strcat(formattedPath, "/");
 	f = strcat(formattedPath, path);
@@ -256,6 +253,8 @@ void ls(FS* fs, char* name) {
 		n = findNode(AbsRel, relName);
 	}
 
+
+
 	if (n == NULL) {
 		printf("Path not found\n");
 		return;
@@ -286,6 +285,31 @@ void ls(FS* fs, char* name) {
 	else
 		printf("D ");
 	printf("%s\n", getLocalName(temp));
+}
+
+node* cd(FS* fs, char* path) {
+/* Returns the node pointed to by the specified absolute or relative path. If any 
+ * error occurs, returs CWD */
+	
+	node* n;
+
+	if (fileOnPath(fs, path)) {
+		printf("Error, the path leads to a file\n");
+		return fs->CWD;
+	}
+	if (path[0] == '/') {
+		path++;		// make path relative
+		n = fs->root;
+	}
+	else
+		n = fs->CWD;
+
+	n = findNode(n, path);
+	if (n == NULL) {
+		printf("Error, path not found\n");
+		return fs->CWD;
+	}
+	return n;
 }
 
 char* getLocalName(node* n) {
@@ -374,7 +398,7 @@ node* findNextNode(node* n, char* name) {
 }
 
 bool fileOnPath(FS* fs, char* path) {
-/* Returns true iff the existing part of the input path conatains no files */
+/* Returns false iff the existing part of the input path conatains no files */
 
 	int length = strlen(path);
 	char temp[PATH_LENGTH_MAX], *t;
@@ -401,15 +425,15 @@ bool fileOnPath(FS* fs, char* path) {
 			n = findNode(tempNode, t);
 
 			if (n == NULL) {
-				return true;
+				return false;
 			}
 			else if (n->nodeType == 0) {
-				return false;
+				return true;
 			}
 		}
 		temp[i] = path[i];
 	}		
-	return true;
+	return false;
 }
 
 char* allocatePath() {
@@ -419,3 +443,4 @@ char* allocatePath() {
 	t = path;
 	return t;
 }
+
