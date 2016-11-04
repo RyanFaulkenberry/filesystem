@@ -121,28 +121,22 @@ bool nodeCompare(node* insertee, node* existing) {
 	return true;
 }
 
-node* mkdir(FS* fs, char* path, int nodeType) {
-/* Creates all missing directories along the given absolute or relative path,
+node* mkdir(node* n, char* path, int nodeType) {
+/* Creates all missing directories along the relative path starting from node n,
  * ending with a node of type nodeType.
  * Ensures that no files are on the path and that the path does not yet exist.
  * Caller expected to reset fs->CWD to the return value of mkdir
  */
-	node* first;
-	node* n;
+	if (path[0] == '/')	// ensure path is relative
+		path++;
 
-	if (path[0] == '/') {
-		first = fs->root;
-		++path;	// remove leading '/'
-	}
-	else
-		first = fs->CWD;
+	node* temp = findNode(n, path);
 
-	n = findNode(first, path);
-	if (n != NULL) {
+	if (temp != NULL) {
 		printf("Unable to create directory: directory already exists\n");
 		return NULL;
 	}
-	return pathMaker(first, path, nodeType);
+	return pathMaker(n, path, nodeType);
 }
 
 node* pathMaker(node* n, char* path, int makeType) {
@@ -220,43 +214,21 @@ char* getLocalFromPath(char* path) {
 	return ++p;
 }
 
-void pwd(FS* fs) {
+void pwd(node* n) {
 /* Prints the absolute path to the cwd */
-	printf("%s\n", fs->CWD->name);
+	printf("%s\n", n->name);
 }
 
-void ls(FS* fs, char* name) {
-/* Prints the local name of every child of the absolute or relative directory
+void ls(node* n, char* path) {
+/* Prints the local name of every child of the directory
  * specified, or the children of CWD if no directory is specified
  */
-	
 	char* localName;
-	char* relName;
-	node* n;
 	node* temp;
-	node* AbsRel;
 	
-	if (name == NULL)
-		n = fs->CWD;
-	else {
-		if (name[0] == '/') {
-			AbsRel = fs->root;
-			if (strlen(name) > 1)
-				relName = &name[1];
-			else
-				relName = NULL;
-		}
-		else {
-			AbsRel = fs->CWD;
-			relName = &name[0];
-		}
-		n = findNode(AbsRel, relName);
-	}
-
-
-
+	n = findNode(n, path);
 	if (n == NULL) {
-		printf("Path not found\n");
+		printf("Path not found\n"); 
 		return;
 	}
 	else if (n->nodeType == 0) {
@@ -271,7 +243,7 @@ void ls(FS* fs, char* name) {
 		temp = n->firstChild;
 
 	// Iterate through each child and print
-	while (temp->sibling != NULL) {
+	do {
 		if (temp->nodeType == 0)
 			printf("F ");
 		else
@@ -279,37 +251,27 @@ void ls(FS* fs, char* name) {
 		localName = getLocalName(temp);
 		printf("%s\n", localName);
 		temp = temp->sibling;
-	}
-	if (temp->nodeType == 0)
-		printf("F ");
-	else
-		printf("D ");
-	printf("%s\n", getLocalName(temp));
+
+	} while (temp != NULL);
 }
 
-node* cd(FS* fs, char* path) {
-/* Returns the node pointed to by the specified absolute or relative path. If any 
- * error occurs, returs CWD */
+node* cd(node* n, char* path) {
+/* Returns the node pointed to by the specified relative path. If any 
+ * error occurs, returs n */
 	
-	node* n;
+	node* temp;
 
-	if (fileOnPath(fs, path)) {
+	if (fileOnPath(n, path)) {
 		printf("Error, the path leads to a file\n");
-		return fs->CWD;
+		return n;
 	}
-	if (path[0] == '/') {
-		path++;		// make path relative
-		n = fs->root;
-	}
-	else
-		n = fs->CWD;
 
-	n = findNode(n, path);
-	if (n == NULL) {
+	temp = findNode(n, path);
+	if (temp == NULL) {
 		printf("Error, path not found\n");
-		return fs->CWD;
+		return n;
 	}
-	return n;
+	return temp;
 }
 
 char* getLocalName(node* n) {
@@ -397,7 +359,7 @@ node* findNextNode(node* n, char* name) {
 	return NULL;
 }
 
-bool fileOnPath(FS* fs, char* path) {
+bool fileOnPath(node* n, char* path) {
 /* Returns false iff the existing part of the input path conatains no files */
 
 	int length = strlen(path);
@@ -405,13 +367,7 @@ bool fileOnPath(FS* fs, char* path) {
 	memset(temp, '\0', sizeof(temp));
 	t = temp;
 	int i;
-	node* n;
 	node* tempNode;
-
-	if (path[0] == '/')
-		tempNode = fs->root;
-	else
-		tempNode = fs->CWD;
 
 	// build path node-by-node from beginning (as temp) until the path leads
 	// to a non-existent node. If a file is detected, return false
@@ -422,12 +378,12 @@ bool fileOnPath(FS* fs, char* path) {
 			if (i == length-1) // end of path
 				temp[i] = path[i];
 
-			n = findNode(tempNode, t);
+			tempNode = findNode(n, t);
 
-			if (n == NULL) {
+			if (tempNode == NULL) {
 				return false;
 			}
-			else if (n->nodeType == 0) {
+			else if (tempNode->nodeType == 0) {
 				return true;
 			}
 		}

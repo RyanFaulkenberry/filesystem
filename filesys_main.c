@@ -42,10 +42,10 @@ char rmStr[3] = "rm";
 				return 0;
 	
 	   		else if (strcmp(str, pwdStr) == 0)
-				pwd(fs);
+				pwd(fs->CWD);
 
 	    		else if (strcmp(str, lsStr) == 0)
-				ls(fs, NULL);
+				ls(fs->CWD, NULL);
 			else
 				printf("Command not found\n");
 		}	
@@ -59,16 +59,28 @@ char rmStr[3] = "rm";
 			memcpy(strPath, ptr+1, (a + sizeof(str)) - ptr);
 	
 	        	if (strcmp(strCommand, lsStr) == 0) {
-	    	    		ls(fs, strPath);
+				if (strPath[0] == '/')
+					ls(fs->root, strPath+1);
+				else
+					ls(fs->CWD, strPath);
 		        }
 	        	else if (strcmp(strCommand, cdStr) == 0) {
-				fs->CWD = cd(fs, strPath);
+				if (strPath[0] == '/')
+					fs->CWD = cd(fs->root, strPath+1);
+				else
+					fs->CWD = cd(fs->CWD, strPath);
 	        	}
-		    	else if (strcmp(strCommand, touchStr) == 0) {
-			    	fs->CWD = mkdir(fs, strPath, 0);
+		    	else if (strcmp(strCommand, touchStr) == 0) { // touch
+				if (strPath[0] == '/')
+			    		fs->CWD = mkdir(fs->root, strPath+1, 0);
+				else
+					fs->CWD = mkdir(fs->CWD, strPath, 0);
 	    		} 
-		    	else if (strcmp(strCommand, mkdirStr) == 0) {
-			    	fs->CWD = mkdir(fs, strPath, 1);
+		    	else if (strcmp(strCommand, mkdirStr) == 0) { // mkdir
+				if (strPath[0] == '/')
+			    		fs->CWD = mkdir(fs->root, strPath+1, 1);
+				else
+					fs->CWD = mkdir(fs->CWD, strPath, 1);
 	    		}
 		    	//else if (strcmp(strCommand, rmStr) == 0) {
 			//	rm(fs, strPath);
